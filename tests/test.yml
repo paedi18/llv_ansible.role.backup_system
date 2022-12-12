@@ -1,0 +1,6 @@
+---
+- name: backup_system role test
+  hosts: localhost
+  roles:
+    - backup_system
+...

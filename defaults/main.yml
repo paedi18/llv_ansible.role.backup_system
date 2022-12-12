@@ -1,0 +1,15 @@
+# backup_system/defaults/main.yml
+---
+
+# by default, all backups go here
+backup_base_dir: /srv/ansible_backup
+
+backup_keep_daily: 7
+backup_keep_weekly: 4
+backup_keep_monthly: 1
+
+mariadb_backup_dir: "{{ backup_base_dir }}/mariadb"
+freeipa_backup_dir: "{{ backup_base_dir }}/freeipa"
+
+# show debug output of script executing
+backup_system_debug: False

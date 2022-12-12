@@ -1,0 +1,44 @@
+# tasks/shared/21_freeipa.yml
+---
+- name: find freeipa setup
+  shell: test -x /usr/sbin/ipa-backup
+  register: check_freeipa
+  changed_when: False
+  failed_when: False
+
+- name: run freeipa backup
+  block:
+  - name: Prepare freeipa backup script
+    template: 
+      src: backup-freeipa.sh.j2
+      dest: /usr/local/sbin/backup-freeipa.sh
+      owner: root 
+      group: root 
+      mode: 0700
+
+  - name: delete old application backups if exist
+    shell: rm -rfv /var/lib/ipa/backup/ipa-* || true
+    changed_when: False
+
+  - name: run freeipa online backup
+    shell: /usr/local/sbin/backup-freeipa.sh
+    register: cmd
+    failed_when: False
+
+  - name: print verbose output if cmd failed
+    debug:
+      var: cmd
+    when: >
+      ( not ( "'ipa-backup command was successful' in cmd.stderr" or
+      "'WARNING: freeipa backup skipped' in cmd.stdout" )) or
+      backup_system_debug
+
+  - name: stop if cmd failed
+    fail:
+      msg: database backup failed, please check verbose output above
+    when: >
+      not ( "'ipa-backup command was successful' in cmd.stderr" or
+      "'WARNING: freeipa backup skipped' in cmd.stdout" )
+
+  when: check_freeipa.rc == 0
+

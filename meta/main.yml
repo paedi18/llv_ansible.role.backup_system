@@ -1,0 +1,19 @@
+# meta/main.yml
+---
+# Change as needed
+galaxy_info:
+  author: Chris Ruettimann
+  role_name: backup_system
+  # namespace: joe-speedboat
+  description: Application consitent backup
+  min_ansible_version: 2.9
+  license: GPLv3
+  platforms:
+  - name: EL
+    versions:
+    - 8
+  galaxy_tags: []
+
+# We don't use dependencies in here anymore
+dependencies: []
+...

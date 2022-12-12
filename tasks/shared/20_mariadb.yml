@@ -1,0 +1,64 @@
+# tasks/shared/20_mariadb.yml
+---
+- name: find mariadb service
+  ansible.builtin.systemd:
+    name: mariadb
+  register: check_mariadb
+  changed_when: check_mariadb.status.ActiveState == "active"
+
+- name: find mysql service
+  ansible.builtin.systemd:
+    name: mysql
+  register: check_mysql
+  changed_when: check_mysql.status.ActiveState == "active"
+
+- name: find mysqld service
+  ansible.builtin.systemd:
+    name: mysqld
+  register: check_mysqld
+  changed_when: check_mysqld.status.ActiveState == "active"
+
+- name: run mariadb/myslq backup
+  block:
+  - name: Prepare mariadb backup script
+    template: 
+      src: backup-mysql.sh.j2
+      dest: /usr/local/sbin/backup-mysql.sh
+      owner: root 
+      group: root 
+      mode: 0700
+
+  - name: run mariadb backup
+    shell: /usr/local/sbin/backup-mysql.sh
+    register: cmd
+    failed_when: False
+
+  - name: print verbose output if cmd failed
+    debug:
+      var: cmd
+    when: >
+      cmd.rc > 0 or
+      backup_system_debug
+
+  - name: stop if cmd failed
+    fail:
+      msg: database backup failed, please check verbose output above
+    when: cmd.rc > 0
+  when: >
+    check_mariadb.status.ActiveState == "active" or 
+    check_mysql.status.ActiveState == "active" or 
+    check_mysqld.status.ActiveState == "active"
+
+- name: search for well know backup scripts and fail, even if our backup succeeded
+  shell: | 
+    (ls -1 /etc/cron.*/*{mysql,maria}* 2>/dev/null || true) | grep . && exit 1 || true
+    egrep 'mysql|mariadb' /var/spool/cron/* && exit 1 || true
+  register: second_script
+  changed_when: False
+  ignore_errors: true
+  failed_when: false
+
+- name: give information message if second backup script is available on the host
+  fail:
+    msg: WARNING - a second backup script is available on the server - please delete this script to get a successful task
+  when: second_script.rc > 0
